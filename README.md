@@ -11,19 +11,17 @@ A Model Context Protocol (MCP) server that provides line-oriented text file edit
 To use this editor with Claude.app, add the following configuration to your prompt:
 
 ```shell
-code ~/Library/Application\ Support/Claude/claude_desktop_config.json
+code %AppData%/Roaming/Claude/claude_desktop_config.json
 ```
 
 ```json
 {
-  "mcpServers": {
-    "text-editor": {
-      "command": "uvx",
-      "args": [
-        "mcp-text-editor"
-      ]
-    }
-  }
+	"mcpServers": {
+		"text-editor": {
+			"command": "uvx",
+			"args": ["mcp-text-editor"]
+		}
+	}
 }
 ```
 
@@ -147,10 +145,10 @@ Get the contents of one or more text files with line range specification.
 
 ```json
 {
-  "file_path": "path/to/file.txt",
-  "line_start": 1,
-  "line_end": 10,
-  "encoding": "utf-8"  // Optional, defaults to utf-8
+	"file_path": "path/to/file.txt",
+	"line_start": 1,
+	"line_end": 10,
+	"encoding": "utf-8" // Optional, defaults to utf-8
 }
 ```
 
@@ -158,26 +156,25 @@ Get the contents of one or more text files with line range specification.
 
 ```json
 {
-  "files": [
-    {
-      "file_path": "file1.txt",
-      "ranges": [
-        {"start": 1, "end": 10},
-        {"start": 20, "end": 30}
-      ],
-      "encoding": "shift_jis"  // Optional, defaults to utf-8
-    },
-    {
-      "file_path": "file2.txt",
-      "ranges": [
-        {"start": 5, "end": 15}
-      ]
-    }
-  ]
+	"files": [
+		{
+			"file_path": "file1.txt",
+			"ranges": [
+				{ "start": 1, "end": 10 },
+				{ "start": 20, "end": 30 }
+			],
+			"encoding": "shift_jis" // Optional, defaults to utf-8
+		},
+		{
+			"file_path": "file2.txt",
+			"ranges": [{ "start": 5, "end": 15 }]
+		}
+	]
 }
 ```
 
 Parameters:
+
 - `file_path`: Path to the text file
 - `line_start`/`start`: Line number to start from (1-based)
 - `line_end`/`end`: Line number to end at (inclusive, null for end of file)
@@ -187,12 +184,12 @@ Parameters:
 
 ```json
 {
-  "contents": "File contents",
-  "line_start": 1,
-  "line_end": 10,
-  "hash": "sha256-hash-of-contents",
-  "file_lines": 50,
-  "file_size": 1024
+	"contents": "File contents",
+	"line_start": 1,
+	"line_end": 10,
+	"hash": "sha256-hash-of-contents",
+	"file_lines": 50,
+	"file_size": 1024
 }
 ```
 
@@ -200,34 +197,34 @@ Parameters:
 
 ```json
 {
-  "file1.txt": [
-    {
-      "content": "Lines 1-10 content",
-      "start": 1,
-      "end": 10,
-      "hash": "sha256-hash-1",
-      "total_lines": 50,
-      "content_size": 512
-    },
-    {
-      "content": "Lines 20-30 content",
-      "start": 20,
-      "end": 30,
-      "hash": "sha256-hash-2",
-      "total_lines": 50,
-      "content_size": 512
-    }
-  ],
-  "file2.txt": [
-    {
-      "content": "Lines 5-15 content",
-      "start": 5,
-      "end": 15,
-      "hash": "sha256-hash-3",
-      "total_lines": 30,
-      "content_size": 256
-    }
-  ]
+	"file1.txt": [
+		{
+			"content": "Lines 1-10 content",
+			"start": 1,
+			"end": 10,
+			"hash": "sha256-hash-1",
+			"total_lines": 50,
+			"content_size": 512
+		},
+		{
+			"content": "Lines 20-30 content",
+			"start": 20,
+			"end": 30,
+			"hash": "sha256-hash-2",
+			"total_lines": 50,
+			"content_size": 512
+		}
+	],
+	"file2.txt": [
+		{
+			"content": "Lines 5-15 content",
+			"start": 5,
+			"end": 15,
+			"hash": "sha256-hash-3",
+			"total_lines": 30,
+			"content_size": 256
+		}
+	]
 }
 ```
 
@@ -239,31 +236,32 @@ Apply patches to text files with robust error handling and conflict detection. S
 
 ```json
 {
-  "files": [
-    {
-      "file_path": "file1.txt",
-      "hash": "sha256-hash-from-get-contents",
-      "encoding": "utf-8",  // Optional, defaults to utf-8
-      "patches": [
-        {
-          "start": 5,
-          "end": 8,
-          "range_hash": "sha256-hash-of-content-being-replaced",
-          "contents": "New content for lines 5-8\n"
-        },
-        {
-          "start": 15,
-          "end": null,  // null means end of file
-          "range_hash": "sha256-hash-of-content-being-replaced",
-          "contents": "Content to append\n"
-        }
-      ]
-    }
-  ]
+	"files": [
+		{
+			"file_path": "file1.txt",
+			"hash": "sha256-hash-from-get-contents",
+			"encoding": "utf-8", // Optional, defaults to utf-8
+			"patches": [
+				{
+					"start": 5,
+					"end": 8,
+					"range_hash": "sha256-hash-of-content-being-replaced",
+					"contents": "New content for lines 5-8\n"
+				},
+				{
+					"start": 15,
+					"end": null, // null means end of file
+					"range_hash": "sha256-hash-of-content-being-replaced",
+					"contents": "Content to append\n"
+				}
+			]
+		}
+	]
 }
 ```
 
 Important Notes:
+
 1. Always get the current hash and range_hash using get_text_file_contents before editing
 2. Patches are applied from bottom to top to handle line number shifts correctly
 3. Patches must not overlap within the same file
@@ -275,10 +273,10 @@ Important Notes:
 
 ```json
 {
-  "file1.txt": {
-    "result": "ok",
-    "hash": "sha256-hash-of-new-contents"
-  }
+	"file1.txt": {
+		"result": "ok",
+		"hash": "sha256-hash-of-new-contents"
+	}
 }
 ```
 
@@ -286,12 +284,12 @@ Important Notes:
 
 ```json
 {
-  "file1.txt": {
-    "result": "error",
-    "reason": "Content hash mismatch",
-    "suggestion": "get",  // Suggests using get_text_file_contents
-    "hint": "Please run get_text_file_contents first to get current content and hashes"
-  }
+	"file1.txt": {
+		"result": "error",
+		"reason": "Content hash mismatch",
+		"suggestion": "get", // Suggests using get_text_file_contents
+		"hint": "Please run get_text_file_contents first to get current content and hashes"
+	}
 }
 ```
 
@@ -300,10 +298,10 @@ Important Notes:
     "hash": "current-hash",
     "content": "Current file content"
 
-  }
+}
 }
 
-```
+````
 
 ### Common Usage Pattern
 
@@ -318,7 +316,7 @@ contents = await get_text_file_contents({
         }
     ]
 })
-```
+````
 
 2. Edit file content:
 
@@ -354,6 +352,7 @@ if result["file.txt"]["result"] == "error":
 ### Error Handling
 
 The server handles various error cases:
+
 - File not found
 - Permission errors
 - Hash mismatches (concurrent edit detection)
@@ -375,20 +374,24 @@ The server handles various error cases:
 ### Common Issues
 
 1. Permission Denied
+
    - Check file and directory permissions
    - Ensure the server process has necessary read/write access
 
 2. Hash Mismatch and Range Hash Errors
+
    - The file was modified by another process
    - Content being replaced has changed
    - Run get_text_file_contents to get fresh hashes
 
 3. Encoding Issues
+
    - Verify file encoding matches the specified encoding
    - Use utf-8 for new files
    - Check for BOM markers in files
 
 4. Connection Issues
+
    - Verify the server is running and accessible
    - Check network configuration and firewall settings
 
