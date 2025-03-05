@@ -10,10 +10,10 @@ from ..text_editor import TextEditor
 
 class BaseHandler(abc.ABC):
     """Base class for handlers.
-    
+
     This class defines the interface that all handlers must implement.
     Subclasses should override the `get_tool_description()` and `run_tool()` methods.
-    
+
     Attributes:
         name (str): The name of the tool.
         description (str): A description of the tool.
@@ -25,7 +25,7 @@ class BaseHandler(abc.ABC):
 
     def __init__(self, editor: TextEditor | None = None):
         """Initialize the handler.
-        
+
         Args:
             editor: The text editor instance to use. If None, a new instance will be created.
         """
@@ -34,11 +34,11 @@ class BaseHandler(abc.ABC):
     @abc.abstractmethod
     def get_tool_description(self) -> Tool:
         """Get the tool description.
-        
+
         Returns:
             Tool: A Tool object that describes this tool, including its name, description,
                 and input schema.
-                
+
         Example:
             ```python
             def get_tool_description(self) -> Tool:
@@ -63,17 +63,17 @@ class BaseHandler(abc.ABC):
     @abc.abstractmethod
     async def run_tool(self, arguments: Dict[str, Any]) -> Sequence[TextContent]:
         """Execute the tool with given arguments.
-        
+
         Args:
             arguments: A dictionary of arguments passed to the tool.
-                
+
         Returns:
             Sequence[TextContent]: A sequence of TextContent objects containing the
                 result of the tool execution.
-                
+
         Raises:
             RuntimeError: If there is an error executing the tool.
-            
+
         Example:
             ```python
             async def run_tool(self, arguments: Dict[str, Any]) -> Sequence[TextContent]:

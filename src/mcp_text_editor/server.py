@@ -6,7 +6,16 @@ from collections.abc import Sequence
 from typing import Any, List
 
 from mcp.server import Server
-from mcp.types import Resource, ResourceTemplate, TextContent, Tool, Prompt, PromptArgument, GetPromptResult, PromptMessage
+from mcp.types import (
+    GetPromptResult,
+    Prompt,
+    PromptArgument,
+    PromptMessage,
+    Resource,
+    ResourceTemplate,
+    TextContent,
+    Tool,
+)
 
 from .handlers import (
     AppendTextFileContentsHandler,
@@ -20,7 +29,7 @@ from .handlers.line_range_resource_handler import LineRangeResourceHandler
 from .version import __version__
 
 # Configure logging
-logging.basicConfig(level=logging.CRITICAL)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("mcp-text-editor")
 
 app = Server("mcp-text-editor")
@@ -57,7 +66,7 @@ async def list_resources() -> List[Resource]:
             uri="text://example.txt",
             name="Text file access",
             mime_type="text/plain",
-            description="Access text files with line-range precision through the text:// URI scheme."
+            description="Access text files with line-range precision through the text:// URI scheme.",
         )
     ]
 
@@ -68,7 +77,6 @@ PROMPTS = {
         name="simple-edit",
         description="Simple file editing without arguments",
     ),
-    
     "code-implement": Prompt(
         name="code-implement",
         description="Implement or enhance code based on requirements",
@@ -76,21 +84,18 @@ PROMPTS = {
             PromptArgument(
                 name="task",
                 description="Implementation task description",
-                required=True
+                required=True,
             ),
             PromptArgument(
                 name="file_path",
                 description="Target file path (existing or new)",
-                required=False
+                required=False,
             ),
             PromptArgument(
-                name="language",
-                description="Programming language",
-                required=False
-            )
-        ]
+                name="language", description="Programming language", required=False
+            ),
+        ],
     ),
-    
     "fix-bug": Prompt(
         name="fix-bug",
         description="Help diagnose and fix bugs in code",
@@ -98,36 +103,38 @@ PROMPTS = {
             PromptArgument(
                 name="issue",
                 description="Description of the bug or issue",
-                required=True
+                required=True,
             ),
             PromptArgument(
                 name="file_path",
                 description="Path to the file containing the bug",
-                required=True
+                required=True,
             ),
             PromptArgument(
                 name="error_message",
                 description="Error message or stack trace, if available",
-                required=False
-            )
-        ]
-    )
+                required=False,
+            ),
+        ],
+    ),
 }
+
 
 @app.list_prompts()
 async def list_prompts() -> List[Prompt]:
     """List available prompts."""
     return list(PROMPTS.values())
 
+
 @app.get_prompt()
 async def get_prompt(name: str, arguments: dict | None = None) -> GetPromptResult:
     """Handle prompt requests."""
     if name not in PROMPTS:
         raise ValueError(f"Prompt not found: {name}")
-    
+
     if arguments is None:
         arguments = {}
-    
+
     if name == "simple-edit":
         return GetPromptResult(
             messages=[
@@ -147,20 +154,20 @@ To use these tools effectively, follow these steps:
    - For adding to the end: "append_text_file_contents"
    - For removing content: "delete_text_file_contents"
 
-Please help me edit a file of my choice."""
-                    )
+Please help me edit a file of my choice.""",
+                    ),
                 )
             ]
         )
-    
+
     elif name == "code-implement":
         task = arguments.get("task", "[TASK]")
         file_path = arguments.get("file_path", "")
         language = arguments.get("language", "")
-        
+
         file_path_text = f" in the file at {file_path}" if file_path else ""
         language_text = f" using {language}" if language else ""
-        
+
         return GetPromptResult(
             messages=[
                 PromptMessage(
@@ -185,26 +192,30 @@ Please help me with this implementation. Follow these steps:
      - "append_text_file_contents" to add content at the end
 5. Verify the changes meet the requirements
 
-Remember that all file paths must be absolute, and when patching files, you need the file hash and range hash for concurrency control."""
-                    )
+Remember that all file paths must be absolute, and when patching files, you need the file hash and range hash for concurrency control.""",
+                    ),
                 ),
                 PromptMessage(
-                    role="assistant", 
+                    role="assistant",
                     content=TextContent(
                         type="text",
-                        text="I'll help you implement this code. Let me break this down into steps."
-                    )
-                )
+                        text="I'll help you implement this code. Let me break this down into steps.",
+                    ),
+                ),
             ]
         )
-    
+
     elif name == "fix-bug":
         issue = arguments.get("issue", "[ISSUE]")
         file_path = arguments.get("file_path", "[FILE_PATH]")
         error_message = arguments.get("error_message", "")
-        
-        error_text = f"\nThe error message is:\n```\n{error_message}\n```" if error_message else ""
-        
+
+        error_text = (
+            f"\nThe error message is:\n```\n{error_message}\n```"
+            if error_message
+            else ""
+        )
+
         return GetPromptResult(
             messages=[
                 PromptMessage(
@@ -226,19 +237,19 @@ Please help me diagnose and fix this issue. Follow these steps:
    - "delete_text_file_contents" to remove problematic code
 5. Explain the root cause and how the fix addresses it
 
-Remember that file paths must be absolute, and when using patch_text_file_contents, you need the file hash and range hash for each section you're modifying."""
-                    )
+Remember that file paths must be absolute, and when using patch_text_file_contents, you need the file hash and range hash for each section you're modifying.""",
+                    ),
                 ),
                 PromptMessage(
-                    role="assistant", 
+                    role="assistant",
                     content=TextContent(
                         type="text",
-                        text="I'll help you fix this bug. Let me start by examining the code to understand what's happening."
-                    )
-                )
+                        text="I'll help you fix this bug. Let me start by examining the code to understand what's happening.",
+                    ),
+                ),
             ]
         )
-    
+
     raise ValueError("Prompt implementation not found")
 
 

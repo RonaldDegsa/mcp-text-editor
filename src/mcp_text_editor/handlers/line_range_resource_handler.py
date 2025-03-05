@@ -5,8 +5,8 @@ from typing import Any, Dict, Optional, Sequence, Tuple
 
 from mcp.types import TextContent, Tool
 
-from .base import BaseHandler
 from ..service import TextEditorService
+from .base import BaseHandler
 
 
 class LineRangeResourceHandler(BaseHandler):
@@ -22,10 +22,10 @@ class LineRangeResourceHandler(BaseHandler):
 
     def get_tool_description(self) -> Tool:
         """Get the tool description.
-        
+
         This handler doesn't function as a tool, but implements this method
         to satisfy the BaseHandler abstract class requirements.
-        
+
         Returns:
             A placeholder Tool object.
         """
@@ -35,15 +35,15 @@ class LineRangeResourceHandler(BaseHandler):
             inputSchema={
                 "type": "object",
                 "properties": {},
-            }
+            },
         )
 
     async def run_tool(self, arguments: Dict[str, Any]) -> Sequence[TextContent]:
         """Execute the tool with given arguments.
-        
+
         This handler doesn't function as a tool, but implements this method
         to satisfy the BaseHandler abstract class requirements.
-        
+
         Returns:
             An empty sequence of TextContent objects.
         """
@@ -62,22 +62,20 @@ class LineRangeResourceHandler(BaseHandler):
             ValueError: If the URI format is invalid.
         """
         file_path, line_start, line_end = self._parse_uri(uri)
-        
-        content, start, end, hash_, total_lines, size = await self.service.read_file_contents(
-            file_path,
-            line_start,
-            line_end
+
+        content, start, end, hash_, total_lines, size = (
+            await self.service.read_file_contents(file_path, line_start, line_end)
         )
 
         return TextContent(
             text=content,
             metadata={
-                'line_start': start,
-                'line_end': end,
-                'content_hash': hash_,
-                'total_lines': total_lines,
-                'content_size': size
-            }
+                "line_start": start,
+                "line_end": end,
+                "content_hash": hash_,
+                "total_lines": total_lines,
+                "content_size": size,
+            },
         )
 
     def _parse_uri(self, uri: str) -> Tuple[str, int, Optional[int]]:
@@ -94,23 +92,23 @@ class LineRangeResourceHandler(BaseHandler):
         """
         try:
             parsed = urllib.parse.urlparse(uri)
-            if parsed.scheme != 'text':
+            if parsed.scheme != "text":
                 raise ValueError(f"Invalid URI scheme: {parsed.scheme}")
 
             # Extract file path (remove leading / if present)
-            file_path = parsed.path.lstrip('/')
+            file_path = parsed.path.lstrip("/")
 
             # Parse query parameters
             query = urllib.parse.parse_qs(parsed.query)
-            if 'lines' not in query:
+            if "lines" not in query:
                 raise ValueError("Missing 'lines' parameter")
 
             # Parse line range (format: start-end or start-)
-            line_range = query['lines'][0]
-            if '-' not in line_range:
+            line_range = query["lines"][0]
+            if "-" not in line_range:
                 raise ValueError("Invalid line range format")
 
-            start_str, *end_parts = line_range.split('-')
+            start_str, *end_parts = line_range.split("-")
             end_str = end_parts[0] if end_parts else None
 
             # Convert to integers
@@ -125,4 +123,10 @@ class LineRangeResourceHandler(BaseHandler):
             return file_path, line_start, line_end
 
         except (ValueError, KeyError, IndexError) as e:
-            raise ValueError(f"Invalid URI format: {str(e)}")
+            if isinstance(e, ValueError):
+                raise ValueError(f"Invalid URI: {uri}") from e
+            if isinstance(e, KeyError):
+                raise ValueError("Missing query parameters") from e
+            if isinstance(e, IndexError):
+                raise ValueError("Invalid line range format") from e
+            raise e

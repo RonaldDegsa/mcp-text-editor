@@ -1,9 +1,10 @@
 """Handler for getting text file contents."""
-from typing import Any, Dict, Sequence
+
 import json
 import logging
 import os
 import traceback
+from typing import Any, Dict, Sequence
 
 from mcp.types import TextContent, Tool
 
