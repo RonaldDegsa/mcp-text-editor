@@ -19,6 +19,7 @@ from mcp.types import (
 
 from .handlers import (
     AppendTextFileContentsHandler,
+    AppendTextFileFromPathHandler,
     CreateTextFileHandler,
     DeleteTextFileContentsHandler,
     GetTextFileContentsHandler,
@@ -29,7 +30,7 @@ from .handlers.line_range_resource_handler import LineRangeResourceHandler
 from .version import __version__
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger("mcp-text-editor")
 
 app = Server("mcp-text-editor")
@@ -38,6 +39,7 @@ get_contents_handler = GetTextFileContentsHandler()
 patch_file_handler = PatchTextFileContentsHandler()
 create_file_handler = CreateTextFileHandler()
 append_file_handler = AppendTextFileContentsHandler()
+append_file_from_path_handler = AppendTextFileFromPathHandler()
 delete_contents_handler = DeleteTextFileContentsHandler()
 insert_file_handler = InsertTextFileContentsHandler()
 line_range_handler = LineRangeResourceHandler()
@@ -152,6 +154,7 @@ To use these tools effectively, follow these steps:
    - For replacing content: "patch_text_file_contents" (requires file hash)
    - For inserting at a position: "insert_text_file_contents"
    - For adding to the end: "append_text_file_contents"
+   - For adding content from another file: "append_text_file_from_path"
    - For removing content: "delete_text_file_contents"
 
 Please help me edit a file of my choice.""",
@@ -190,6 +193,7 @@ Please help me with this implementation. Follow these steps:
      - "patch_text_file_contents" to replace sections (requires file hash and range hash)
      - "insert_text_file_contents" to add content at specific positions
      - "append_text_file_contents" to add content at the end
+     - "append_text_file_from_path" to append content from another file
 5. Verify the changes meet the requirements
 
 Remember that all file paths must be absolute, and when patching files, you need the file hash and range hash for concurrency control.""",
@@ -261,6 +265,7 @@ async def list_tools() -> List[Tool]:
         patch_file_handler.get_tool_description(),
         create_file_handler.get_tool_description(),
         append_file_handler.get_tool_description(),
+        append_file_from_path_handler.get_tool_description(),
         delete_contents_handler.get_tool_description(),
         insert_file_handler.get_tool_description(),
     ]
@@ -277,6 +282,8 @@ async def call_tool(name: str, arguments: Any) -> Sequence[TextContent]:
             return await create_file_handler.run_tool(arguments)
         elif name == append_file_handler.name:
             return await append_file_handler.run_tool(arguments)
+        elif name == append_file_from_path_handler.name:
+            return await append_file_from_path_handler.run_tool(arguments)
         elif name == delete_contents_handler.name:
             return await delete_contents_handler.run_tool(arguments)
         elif name == insert_file_handler.name:

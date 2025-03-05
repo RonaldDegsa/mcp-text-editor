@@ -4,6 +4,7 @@ import hashlib
 from typing import Dict, List, Optional, Tuple
 
 from .models import (
+    AppendTextFileFromPathRequest,
     DeleteTextFileContentsRequest,
     EditFileOperation,
     EditPatch,
@@ -53,6 +54,106 @@ class TextEditorService:
             prev_end = patch_end
 
         return True
+
+    def append_text_file_from_path(
+        self, request: AppendTextFileFromPathRequest
+    ) -> Dict[str, EditResult]:
+        """Append content from source file to target file with hash validation."""
+        current_hash = None
+        try:
+            # Check if source file exists and is readable
+            try:
+                with open(request.source_file_path, "r", encoding=request.encoding) as _:
+                    pass
+            except FileNotFoundError:
+                return {
+                    request.target_file_path: EditResult(
+                        result="error",
+                        reason=f"Source file not found: {request.source_file_path}",
+                        hash=None,
+                    )
+                }
+            except Exception as e:
+                return {
+                    request.target_file_path: EditResult(
+                        result="error",
+                        reason=f"Error reading source file: {str(e)}",
+                        hash=None,
+                    )
+                }
+
+            # Read and verify target file hash
+            try:
+                with open(request.target_file_path, "r", encoding=request.encoding) as f:
+                    current_content = f.read()
+                    current_hash = self.calculate_hash(current_content)
+            except FileNotFoundError:
+                return {
+                    request.target_file_path: EditResult(
+                        result="error",
+                        reason=f"Target file not found: {request.target_file_path}",
+                        hash=None,
+                    )
+                }
+
+            # Check for hash mismatch
+            if current_hash != request.target_file_hash:
+                return {
+                    request.target_file_path: EditResult(
+                        result="error",
+                        reason="Target file hash mismatch",
+                        hash=current_hash,
+                    )
+                }
+
+            # Append source file content to target file
+            try:
+                with open(request.target_file_path, "a", encoding=request.encoding) as target_file:
+                    # Read and write source file in chunks
+                    with open(request.source_file_path, "r", encoding=request.encoding) as source_file:
+                        chunk_size = 8192  # 8KB chunks
+                        last_chunk = None
+                        while True:
+                            chunk = source_file.read(chunk_size)
+                            if not chunk:
+                                break
+                            target_file.write(chunk)
+                            last_chunk = chunk
+
+                        # Ensure the file ends with a newline
+                        if last_chunk and not last_chunk.endswith("\n"):
+                            target_file.write("\n")
+
+                # Calculate new hash
+                with open(request.target_file_path, "r", encoding=request.encoding) as f:
+                    new_content = f.read()
+                    new_hash = self.calculate_hash(new_content)
+
+                return {
+                    request.target_file_path: EditResult(
+                        result="ok",
+                        hash=new_hash,
+                        reason=None,
+                    )
+                }
+
+            except Exception as e:
+                return {
+                    request.target_file_path: EditResult(
+                        result="error",
+                        reason=f"Error appending content: {str(e)}",
+                        hash=current_hash,
+                    )
+                }
+
+        except Exception as e:
+            return {
+                request.target_file_path: EditResult(
+                    result="error",
+                    reason=f"Unexpected error: {str(e)}",
+                    hash=current_hash,
+                )
+            }
 
     def edit_file_contents(
         self, file_path: str, operation: EditFileOperation

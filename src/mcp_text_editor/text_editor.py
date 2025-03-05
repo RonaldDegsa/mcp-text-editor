@@ -3,6 +3,7 @@
 import hashlib
 import logging
 import os
+import shutil
 from typing import Any, Dict, List, Optional, Tuple
 
 from .models import DeleteTextFileContentsRequest, EditPatch, FileRanges
@@ -219,6 +220,117 @@ class TextEditor:
             total_lines,
             content_size,
         )
+
+    async def append_text_file_from_path(
+        self,
+        source_file_path: str,
+        target_file_path: str,
+        target_file_hash: str,
+        encoding: str = "utf-8",
+    ) -> Dict[str, Any]:
+        """Append content from a source file to a target file without reading the source file content.
+
+        Args:
+            source_file_path (str): Path to the source file
+            target_file_path (str): Path to the target file
+            target_file_hash (str): Expected hash of the target file before appending
+            encoding (str, optional): File encoding. Defaults to "utf-8"
+
+        Returns:
+            Dict[str, Any]: Results containing:
+                - result: "ok" or "error"
+                - hash: New file hash if successful
+                - reason: Error message if result is "error"
+        """
+        self._validate_file_path(source_file_path)
+        self._validate_file_path(target_file_path)
+
+        try:
+            # Check if source file exists
+            if not os.path.exists(source_file_path):
+                return {
+                    "result": "error",
+                    "reason": f"Source file not found: {source_file_path}",
+                    "hash": None,
+                }
+
+            # Check if target file exists
+            if not os.path.exists(target_file_path):
+                return {
+                    "result": "error",
+                    "reason": f"Target file not found: {target_file_path}",
+                    "hash": None,
+                }
+
+            # Verify target file hash
+            (
+                current_content,
+                _,
+                _,
+                current_hash,
+                total_lines,
+                _,
+            ) = await self.read_file_contents(
+                target_file_path,
+                encoding=encoding,
+            )
+
+            if current_hash != target_file_hash:
+                return {
+                    "result": "error",
+                    "reason": "Target file hash mismatch - Please use get_text_file_contents tool to get current content and hash",
+                    "hash": None,
+                }
+
+            # Open the target file in append mode
+            with open(target_file_path, "a", encoding=encoding) as target_file:
+                # Open the source file and copy its content to the target file
+                with open(source_file_path, "r", encoding=encoding) as source_file:
+                    # Read the source file content in chunks to avoid loading large files into memory
+                    chunk_size = 8192  # 8KB chunks
+                    while True:
+                        chunk = source_file.read(chunk_size)
+                        if not chunk:
+                            break
+                        target_file.write(chunk)
+
+                    # Ensure the file ends with a newline
+                    if chunk and not chunk.endswith("\n"):
+                        target_file.write("\n")
+
+            # Read the updated file to calculate the new hash
+            with open(target_file_path, "r", encoding=encoding) as f:
+                updated_content = f.read()
+                new_hash = self.calculate_hash(updated_content)
+
+            return {
+                "result": "ok",
+                "hash": new_hash,
+                "reason": None,
+            }
+
+        except FileNotFoundError as e:
+            return {
+                "result": "error",
+                "reason": str(e),
+                "hash": None,
+            }
+        except (IOError, UnicodeError, PermissionError) as e:
+            return {
+                "result": "error",
+                "reason": f"Error appending file: {str(e)}",
+                "hash": None,
+            }
+        except Exception as e:
+            import traceback
+
+            logger.error(f"Error: {str(e)}")
+            logger.error(f"Traceback:\n{traceback.format_exc()}")
+            return {
+                "result": "error",
+                "reason": f"Error: {str(e)}",
+                "hash": None,
+            }
 
     async def edit_file_contents(
         self,

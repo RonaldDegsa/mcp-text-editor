@@ -223,3 +223,22 @@ class PatchTextFileContentsRequest(BaseModel):
     encoding: Optional[str] = Field(
         "utf-8", description="Text encoding (default: 'utf-8')"
     )
+
+
+class AppendTextFileFromPathRequest(BaseModel):
+    """Request model for appending content from one file to another.
+    Example:
+    {
+        "source_file_path": "/path/to/source/file",
+        "target_file_path": "/path/to/target/file",
+        "target_file_hash": "abc123...",
+        "encoding": "utf-8"
+    }
+    """
+
+    source_file_path: str = Field(..., description="Path to the source text file")
+    target_file_path: str = Field(..., description="Path to the target text file")
+    target_file_hash: str = Field(..., description="Hash of the target file contents")
+    encoding: Optional[str] = Field(
+        "utf-8", description="Text encoding (default: 'utf-8')"
+    )
