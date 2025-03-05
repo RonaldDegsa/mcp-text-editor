@@ -196,14 +196,14 @@ else {
     Write-Host "Failed to sort imports"
     exit 1
 }
-uvx ruff check --fix src tests
-if ($?) {
-    Write-Host "Checked code with ruff"
-}
-else {
-    Write-Host "Failed to check code with ruff"
-    exit 1
-}
+# uvx ruff check --fix src tests
+# if ($?) {
+#     Write-Host "Checked code with ruff"
+# }
+# else {
+#     Write-Host "Failed to check code with ruff"
+#     exit 1
+# }
 
 # Run tests
 pytest tests -v

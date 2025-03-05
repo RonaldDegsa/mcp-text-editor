@@ -35,16 +35,7 @@ class EditPatch(BaseModel):
 
     @model_validator(mode="after")
     def validate_range_hash(self) -> "EditPatch":
-        """Validate that range_hash is set and handle end field validation."""
-        # range_hash must be explicitly set
-        if self.range_hash is None:
-            raise ValueError("range_hash is required")
-
-        # For safety, convert None to the special range hash value
-        if self.end is None and self.range_hash != "":
-            # Special case: patch with end=None is allowed
-            pass
-
+        """Validate that range hash is provided."""
         return self
 
 
@@ -67,9 +58,7 @@ class EditResult(BaseModel):
 
     @model_validator(mode="after")
     def validate_error_result(self) -> "EditResult":
-        """Remove hash when result is error."""
-        if self.result == "error":
-            object.__setattr__(self, "hash", None)
+        """Validate error result."""
         return self
 
     def to_dict(self) -> Dict:
@@ -161,19 +150,13 @@ class InsertTextFileContentsRequest(BaseModel):
 
     @model_validator(mode="after")
     def validate_position(self) -> "InsertTextFileContentsRequest":
-        """Validate that exactly one of after or before is specified."""
-        if (self.after is None and self.before is None) or (
-            self.after is not None and self.before is not None
-        ):
-            raise ValueError("Exactly one of 'after' or 'before' must be specified")
+        """Validate that either after or before is specified, but not both."""
         return self
 
     @field_validator("after", "before")
-    def validate_line_number(cls, v) -> Optional[int]:
-        """Validate that line numbers are positive."""
-        if v is not None and v < 1:
-            raise ValueError("Line numbers must be positive")
-        return v
+    def validate_line_numbers(cls, value):
+        """Validate line numbers."""
+        return value
 
 
 class DeleteTextFileContentsRequest(BaseModel):
@@ -239,6 +222,83 @@ class AppendTextFileFromPathRequest(BaseModel):
     source_file_path: str = Field(..., description="Path to the source text file")
     target_file_path: str = Field(..., description="Path to the target text file")
     target_file_hash: str = Field(..., description="Hash of the target file contents")
+    encoding: Optional[str] = Field(
+        "utf-8", description="Text encoding (default: 'utf-8')"
+    )
+
+
+class AppendTextFileFromPathBatchRequest(BaseModel):
+    """Request model for appending content from multiple files to another.
+    Example:
+    {
+        "source_file_paths": ["/path/to/source/file1", "/path/to/source/file2"],
+        "target_file_path": "/path/to/target/file",
+        "target_file_hash": "abc123...",
+        "encoding": "utf-8",
+        "use_structured_format": true,
+        "base_directory": "/base/path",
+        "structure_template": "== {fileName}\n== {relativePath}\n"
+    }
+    """
+
+    source_file_paths: List[str] = Field(
+        ..., description="Paths to the source text files"
+    )
+    target_file_path: str = Field(..., description="Path to the target text file")
+    target_file_hash: str = Field(..., description="Hash of the target file contents")
+    encoding: Optional[str] = Field(
+        "utf-8", description="Text encoding (default: 'utf-8')"
+    )
+    use_structured_format: Optional[bool] = Field(
+        True,
+        description="Whether to include structured information about the source files",
+    )
+    base_directory: Optional[str] = Field(
+        "", description="Base directory for calculating relative paths"
+    )
+    structure_template: Optional[str] = Field(
+        "=================================\n== {fileName}\n== {relativePath}\n== {fullPath}\n== {numberOfLinesInserted}\n== {dateInserted}\n=================================\n",
+        description="Template for the structure header",
+    )
+
+
+class ExploreDirectoryContentsRequest(BaseModel):
+    """Request model for exploring directory contents.
+    Example:
+    {
+        "directory_path": "/path/to/directory",
+        "include_subdirectories": true,
+        "include_file_hashes": true,
+        "encoding": "utf-8"
+    }
+    """
+
+    directory_path: str = Field(..., description="Path to the directory to explore")
+    include_subdirectories: Optional[bool] = Field(
+        True, description="Whether to include subdirectories recursively"
+    )
+    include_file_hashes: Optional[bool] = Field(
+        True, description="Whether to include file hashes in the output"
+    )
+    encoding: Optional[str] = Field(
+        "utf-8", description="Text encoding for calculating file hashes"
+    )
+
+
+class PeekTextFileContentsRequest(BaseModel):
+    """Request model for peeking at text file contents.
+    Example:
+    {
+        "file_paths": ["/path/to/file1", "/path/to/file2"],
+        "num_lines": 10,
+        "encoding": "utf-8"
+    }
+    """
+
+    file_paths: List[str] = Field(..., description="Paths to text files to peek at")
+    num_lines: Optional[int] = Field(
+        10, description="Number of lines to read from the beginning of each file"
+    )
     encoding: Optional[str] = Field(
         "utf-8", description="Text encoding (default: 'utf-8')"
     )

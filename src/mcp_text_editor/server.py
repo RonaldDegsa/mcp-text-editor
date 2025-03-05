@@ -22,9 +22,11 @@ from .handlers import (
     AppendTextFileFromPathHandler,
     CreateTextFileHandler,
     DeleteTextFileContentsHandler,
+    ExploreDirectoryContentsHandler,
     GetTextFileContentsHandler,
     InsertTextFileContentsHandler,
     PatchTextFileContentsHandler,
+    PeekTextFileContentsHandler,
 )
 from .handlers.line_range_resource_handler import LineRangeResourceHandler
 from .version import __version__
@@ -43,6 +45,8 @@ append_file_from_path_handler = AppendTextFileFromPathHandler()
 delete_contents_handler = DeleteTextFileContentsHandler()
 insert_file_handler = InsertTextFileContentsHandler()
 line_range_handler = LineRangeResourceHandler()
+explore_directory_handler = ExploreDirectoryContentsHandler()
+peek_file_handler = PeekTextFileContentsHandler()
 
 
 @app.read_resource()
@@ -156,6 +160,8 @@ To use these tools effectively, follow these steps:
    - For adding to the end: "append_text_file_contents"
    - For adding content from another file: "append_text_file_from_path"
    - For removing content: "delete_text_file_contents"
+   - For exploring directories: "explore_directory_contents"
+   - For peeking at file contents: "peek_text_file_contents"
 
 Please help me edit a file of my choice.""",
                     ),
@@ -268,6 +274,8 @@ async def list_tools() -> List[Tool]:
         append_file_from_path_handler.get_tool_description(),
         delete_contents_handler.get_tool_description(),
         insert_file_handler.get_tool_description(),
+        explore_directory_handler.get_tool_description(),
+        peek_file_handler.get_tool_description(),
     ]
 
 
@@ -290,6 +298,10 @@ async def call_tool(name: str, arguments: Any) -> Sequence[TextContent]:
             return await insert_file_handler.run_tool(arguments)
         elif name == patch_file_handler.name:
             return await patch_file_handler.run_tool(arguments)
+        elif name == explore_directory_handler.name:
+            return await explore_directory_handler.run_tool(arguments)
+        elif name == peek_file_handler.name:
+            return await peek_file_handler.run_tool(arguments)
         else:
             raise ValueError(f"Unknown tool: {name}")
     except ValueError:
