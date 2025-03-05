@@ -41,7 +41,7 @@ ENV/
 .coverage.*
 .pytest_cache/
 htmlcov/
-tests/
+
 
 # Distribution
 *.tar.gz
