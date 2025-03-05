@@ -2,6 +2,14 @@
 Stop-Process -Name "mcp-text-editor.exe" -Force -ErrorAction SilentlyContinue
 Write-Host "Killed all instances of the mcp-text-editor"
 
+# Kill all instances of the mcp-text-editor
+Stop-Process -Name "uvx.exe" -Force -ErrorAction SilentlyContinue
+Write-Host "Killed all instances of the uvx.exe"
+
+# Kill all instances of the mcp-text-editor
+Stop-Process -Name "uv.exe" -Force -ErrorAction SilentlyContinue
+Write-Host "Killed all instances of the uv.exe"
+
 # Navigate to the project directory
 cd d:\MCP\Git\mcp-text-editor
 Write-Host "Navigated to the project directory"
@@ -118,13 +126,13 @@ if (Test-Path -Path .ruff_cache) {
     }
 }
 
-if (Test-Path -Path tests\**\__pycache__) {
-    Remove-Item -Recurse -Force tests\**\__pycache__
+if (Test-Path -Path tests\__pycache__) {
+    Remove-Item -Recurse -Force tests\__pycache__
     if ($?) {
-        Write-Host "Removed tests\**\__pycache__ directories"
+        Write-Host "Removed tests\__pycache__ directories"
     }
     else {
-        Write-Host "Failed to remove tests\**\__pycache__ directories"
+        Write-Host "Failed to remove tests\__pycache__ directories"
         exit 1
     }
 }
@@ -149,15 +157,6 @@ else {
     exit 1
 }
 
-# Install uv if not already installed
-pip install uv
-if ($?) {
-    Write-Host "Installed uv"
-}
-else {
-    Write-Host "Failed to install uv"
-    exit 1
-}
 
 # Build the package using uv
 uv pip install --force-reinstall -e .
@@ -181,7 +180,7 @@ else {
 }
 
 # Format the code
-uv run black src tests
+uvx black src tests
 if ($?) {
     Write-Host "Formatted code"
 }
@@ -189,7 +188,7 @@ else {
     Write-Host "Failed to format code"
     exit 1
 }
-uv run isort src tests
+uvx isort src tests
 if ($?) {
     Write-Host "Sorted imports"
 }
@@ -197,7 +196,7 @@ else {
     Write-Host "Failed to sort imports"
     exit 1
 }
-uv run ruff check --fix src tests
+uvx ruff check --fix src tests
 if ($?) {
     Write-Host "Checked code with ruff"
 }
@@ -207,7 +206,7 @@ else {
 }
 
 # Run tests
-uv run pytest tests -v
+pytest tests -v
 if ($?) {
     Write-Host "Ran tests"
 }
