@@ -7,7 +7,7 @@ authors = [
 ]
 dependencies = [
     "asyncio>=3.4.3",
-    "mcp>=1.1.2",
+    "mcp[cli]>=1.1.2",
     "chardet>=5.2.0",
 ]
 requires-python = ">=3.13"

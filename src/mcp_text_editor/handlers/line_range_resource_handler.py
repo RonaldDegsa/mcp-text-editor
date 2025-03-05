@@ -1,9 +1,9 @@
 """Handler for line-range resource access."""
 
 import urllib.parse
-from typing import Optional, Tuple
+from typing import Any, Dict, Optional, Sequence, Tuple
 
-from mcp.types import TextContent
+from mcp.types import TextContent, Tool
 
 from .base import BaseHandler
 from ..service import TextEditorService
@@ -12,10 +12,42 @@ from ..service import TextEditorService
 class LineRangeResourceHandler(BaseHandler):
     """Handler for accessing text file contents through URI templates."""
 
+    name = "line_range_resource"
+    description = "Handles resource requests for line range access."
+
     def __init__(self):
         """Initialize the handler."""
         super().__init__()
         self.service = TextEditorService()
+
+    def get_tool_description(self) -> Tool:
+        """Get the tool description.
+        
+        This handler doesn't function as a tool, but implements this method
+        to satisfy the BaseHandler abstract class requirements.
+        
+        Returns:
+            A placeholder Tool object.
+        """
+        return Tool(
+            name=self.name,
+            description=self.description,
+            inputSchema={
+                "type": "object",
+                "properties": {},
+            }
+        )
+
+    async def run_tool(self, arguments: Dict[str, Any]) -> Sequence[TextContent]:
+        """Execute the tool with given arguments.
+        
+        This handler doesn't function as a tool, but implements this method
+        to satisfy the BaseHandler abstract class requirements.
+        
+        Returns:
+            An empty sequence of TextContent objects.
+        """
+        return []
 
     async def handle_resource(self, uri: str) -> TextContent:
         """Handle a resource request for line-range access.

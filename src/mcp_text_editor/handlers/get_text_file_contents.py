@@ -1,12 +1,15 @@
 """Handler for getting text file contents."""
-
-import json
-import os
 from typing import Any, Dict, Sequence
+import json
+import logging
+import os
+import traceback
 
 from mcp.types import TextContent, Tool
 
 from .base import BaseHandler
+
+logger = logging.getLogger("mcp-text-editor")
 
 
 class GetTextFileContentsHandler(BaseHandler):
@@ -90,6 +93,10 @@ class GetTextFileContentsHandler(BaseHandler):
             return [TextContent(type="text", text=json.dumps(response, indent=2))]
 
         except KeyError as e:
+            logger.error(f"Missing required argument: '{e}'")
+            logger.error(traceback.format_exc())
             raise RuntimeError(f"Missing required argument: '{e}'") from e
         except Exception as e:
+            logger.error(f"Error processing request: {str(e)}")
+            logger.error(traceback.format_exc())
             raise RuntimeError(f"Error processing request: {str(e)}") from e

@@ -6,7 +6,7 @@ from collections.abc import Sequence
 from typing import Any, List
 
 from mcp.server import Server
-from mcp.types import ResourceTemplate, TextContent, Tool
+from mcp.types import Resource, ResourceTemplate, TextContent, Tool, Prompt, PromptArgument
 
 from .handlers import (
     AppendTextFileContentsHandler,
@@ -20,7 +20,7 @@ from .handlers.line_range_resource_handler import LineRangeResourceHandler
 from .version import __version__
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.CRITICAL)
 logger = logging.getLogger("mcp-text-editor")
 
 app = Server("mcp-text-editor")
@@ -48,72 +48,76 @@ async def read_resource(uri: str) -> TextContent:
         raise RuntimeError(f"Error reading resource: {str(e)}") from e
 
 
+@app.list_resources()
+async def list_resources() -> List[Resource]:
+    """List available resources that can be accessed by clients."""
+    logger.info("Listing available resources")
+    return [
+        Resource(
+            uri="text://example.txt",
+            name="Text file access",
+            mime_type="text/plain",
+            description="Access text files with line-range precision through the text:// URI scheme."
+        )
+    ]
+
+
+@app.list_prompts()
+async def list_prompts() -> List[Prompt]:
+    """List available prompts."""
+    logger.info("Listing available prompts")
+    return [
+        Prompt(
+            name="edit-file",
+            description="Create or edit a text file",
+            arguments=[
+                PromptArgument(
+                    name="file_path",
+                    description="Path to the file to edit",
+                    required=True
+                ),
+                PromptArgument(
+                    name="task",
+                    description="What you want to do with the file",
+                    required=True
+                )
+            ]
+        ),
+        Prompt(
+            name="code-review",
+            description="Review code in a file",
+            arguments=[
+                PromptArgument(
+                    name="file_path",
+                    description="Path to the code file to review",
+                    required=True
+                )
+            ]
+        ),
+        Prompt(
+            name="summarize",
+            description="Summarize the contents of a text file",
+            arguments=[
+                PromptArgument(
+                    name="file_path",
+                    description="Path to the file to summarize",
+                    required=True
+                )
+            ]
+        )
+    ]
+
 
 @app.list_tools()
 async def list_tools() -> List[Tool]:
     """List available tools with enhanced descriptions and LLM guidance."""
     return [
-        Tool(
-            name="get_text_file_contents",
-            description="Read text files with line-range precision. Optimized for partial file access to minimize token usage.",
-            input_schema=get_contents_handler.get_request_model().schema(),
-            prompt="""When reading files:
-1. Use line ranges to minimize token usage
-2. Store returned hashes for subsequent edits
-3. Handle multi-file operations efficiently
-4. Consider using encoding parameter for non-UTF8 files""",
-        ),
-        Tool(
-            name="patch_text_file_contents",
-            description="Apply patches to text files with conflict detection and atomic operations.",
-            input_schema=patch_file_handler.get_request_model().schema(),
-            prompt="""When patching files:
-1. Always get current content hash first
-2. Use range_hash for conflict detection
-3. Order patches from bottom to top
-4. Handle encoding consistently
-5. Consider atomic operations for multiple files""",
-        ),
-        Tool(
-            name="create_text_file",
-            description="Create new text files with proper encoding and error handling.",
-            input_schema=create_file_handler.get_request_model().schema(),
-            prompt="""When creating files:
-1. Check if file exists first
-2. Use appropriate encoding (default: UTF-8)
-3. Ensure directory exists
-4. Handle path validation""",
-        ),
-        Tool(
-            name="append_text_file_contents",
-            description="Append content to text files with hash validation.",
-            input_schema=append_file_handler.get_request_model().schema(),
-            prompt="""When appending:
-1. Verify file exists
-2. Use file_hash for conflict detection
-3. Handle line endings properly
-4. Consider encoding for content""",
-        ),
-        Tool(
-            name="delete_text_file_contents",
-            description="Delete content ranges from text files with validation.",
-            input_schema=delete_contents_handler.get_request_model().schema(),
-            prompt="""When deleting content:
-1. Verify range existence
-2. Use range_hash for validation
-3. Handle overlapping ranges
-4. Consider atomic operations""",
-        ),
-        Tool(
-            name="insert_text_file_contents",
-            description="Insert content at specific positions with proper line handling.",
-            input_schema=insert_file_handler.get_request_model().schema(),
-            prompt="""When inserting:
-1. Validate insert position
-2. Use file_hash for conflict detection
-3. Handle line endings
-4. Consider encoding for content""",
-        ),
+        get_contents_handler.get_tool_description(),
+        patch_file_handler.get_tool_description(),
+        create_file_handler.get_tool_description(),
+        append_file_handler.get_tool_description(),
+        delete_contents_handler.get_tool_description(),
+        insert_file_handler.get_tool_description(),
     ]
 
 
@@ -160,6 +164,46 @@ Parameters:
 Example: text://path/to/file.txt?lines=5-10""",
         )
     ]
+
+
+@app.get_prompt()
+async def get_prompt(name: str, arguments: dict) -> dict:
+    """Handle prompt requests."""
+    logger.info(f"Getting prompt: {name} with arguments {arguments}")
+    
+    if name == "edit-file":
+        file_path = arguments.get("file_path", "[FILE_PATH]")
+        task = arguments.get("task", "[TASK]")
+        return {
+            "messages": [
+                {
+                    "role": "user",
+                    "content": f"I need to {task} in the file at {file_path}. Please help me with that."
+                }
+            ]
+        }
+    elif name == "code-review":
+        file_path = arguments.get("file_path", "[FILE_PATH]")
+        return {
+            "messages": [
+                {
+                    "role": "user",
+                    "content": f"Please review the code in {file_path}. Suggest any improvements or identify potential issues."
+                }
+            ]
+        }
+    elif name == "summarize":
+        file_path = arguments.get("file_path", "[FILE_PATH]")
+        return {
+            "messages": [
+                {
+                    "role": "user", 
+                    "content": f"Please summarize the contents of the file at {file_path} in a concise way."
+                }
+            ]
+        }
+    else:
+        raise ValueError(f"Unknown prompt: {name}")
 
 
 async def main() -> None:
