@@ -63,7 +63,9 @@ class TextEditorService:
         try:
             # Check if source file exists and is readable
             try:
-                with open(request.source_file_path, "r", encoding=request.encoding) as _:
+                with open(
+                    request.source_file_path, "r", encoding=request.encoding
+                ) as _:
                     pass
             except FileNotFoundError:
                 return {
@@ -84,7 +86,9 @@ class TextEditorService:
 
             # Read and verify target file hash
             try:
-                with open(request.target_file_path, "r", encoding=request.encoding) as f:
+                with open(
+                    request.target_file_path, "r", encoding=request.encoding
+                ) as f:
                     current_content = f.read()
                     current_hash = self.calculate_hash(current_content)
             except FileNotFoundError:
@@ -108,9 +112,13 @@ class TextEditorService:
 
             # Append source file content to target file
             try:
-                with open(request.target_file_path, "a", encoding=request.encoding) as target_file:
+                with open(
+                    request.target_file_path, "a", encoding=request.encoding
+                ) as target_file:
                     # Read and write source file in chunks
-                    with open(request.source_file_path, "r", encoding=request.encoding) as source_file:
+                    with open(
+                        request.source_file_path, "r", encoding=request.encoding
+                    ) as source_file:
                         chunk_size = 8192  # 8KB chunks
                         last_chunk = None
                         while True:
@@ -125,7 +133,9 @@ class TextEditorService:
                             target_file.write("\n")
 
                 # Calculate new hash
-                with open(request.target_file_path, "r", encoding=request.encoding) as f:
+                with open(
+                    request.target_file_path, "r", encoding=request.encoding
+                ) as f:
                     new_content = f.read()
                     new_hash = self.calculate_hash(new_content)
 

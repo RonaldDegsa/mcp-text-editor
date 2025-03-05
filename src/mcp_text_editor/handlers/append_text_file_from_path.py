@@ -45,7 +45,11 @@ class AppendTextFileFromPathHandler(BaseHandler):
                         "default": "utf-8",
                     },
                 },
-                "required": ["source_file_path", "target_file_path", "target_file_hash"],
+                "required": [
+                    "source_file_path",
+                    "target_file_path",
+                    "target_file_hash",
+                ],
             },
         )
 
@@ -61,16 +65,20 @@ class AppendTextFileFromPathHandler(BaseHandler):
 
             source_file_path = arguments["source_file_path"]
             target_file_path = arguments["target_file_path"]
-            
+
             if not os.path.isabs(source_file_path):
-                raise RuntimeError(f"Source file path must be absolute: {source_file_path}")
+                raise RuntimeError(
+                    f"Source file path must be absolute: {source_file_path}"
+                )
             if not os.path.isabs(target_file_path):
-                raise RuntimeError(f"Target file path must be absolute: {target_file_path}")
+                raise RuntimeError(
+                    f"Target file path must be absolute: {target_file_path}"
+                )
 
             # Check if source file exists
             if not os.path.exists(source_file_path):
                 raise RuntimeError(f"Source file does not exist: {source_file_path}")
-            
+
             # Check if target file exists
             if not os.path.exists(target_file_path):
                 raise RuntimeError(f"Target file does not exist: {target_file_path}")
