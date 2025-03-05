@@ -9,24 +9,24 @@ class GetTextFileContentsRequest(BaseModel):
     """Request model for getting text file contents."""
 
     file_path: str = Field(..., description="Path to the text file")
-    line_start: int = Field(1, description="Starting line number (1-based)")
-    line_end: Optional[int] = Field(None, description="Ending line number (inclusive)")
+    start: int = Field(1, description="Starting line number (1-based)")
+    end: Optional[int] = Field(None, description="Ending line number (inclusive)")
 
 
 class GetTextFileContentsResponse(BaseModel):
     """Response model for getting text file contents."""
 
     contents: str = Field(..., description="File contents")
-    line_start: int = Field(..., description="Starting line number")
-    line_end: int = Field(..., description="Ending line number")
-    file_hash: str = Field(..., description="Hash of the contents")
+    start: int = Field(..., description="Starting line number")
+    end: int = Field(..., description="Ending line number")
+    hash: str = Field(..., description="Hash of the contents")
 
 
 class EditPatch(BaseModel):
     """Model for a single edit patch operation."""
 
-    line_start: int = Field(1, description="Starting line for edit")
-    line_end: Optional[int] = Field(None, description="Ending line for edit")
+    start: int = Field(1, description="Starting line for edit")
+    end: Optional[int] = Field(None, description="Ending line for edit")
     contents: str = Field(..., description="New content to insert")
     range_hash: Optional[str] = Field(
         None,  # None for new patches, must be explicitly set
@@ -35,14 +35,14 @@ class EditPatch(BaseModel):
 
     @model_validator(mode="after")
     def validate_range_hash(self) -> "EditPatch":
-        """Validate that range_hash is set and handle line_end field validation."""
+        """Validate that range_hash is set and handle end field validation."""
         # range_hash must be explicitly set
         if self.range_hash is None:
             raise ValueError("range_hash is required")
 
         # For safety, convert None to the special range hash value
-        if self.line_end is None and self.range_hash != "":
-            # Special case: patch with line_end=None is allowed
+        if self.end is None and self.range_hash != "":
+            # Special case: patch with end=None is allowed
             pass
 
         return self
@@ -51,8 +51,8 @@ class EditPatch(BaseModel):
 class EditFileOperation(BaseModel):
     """Model for individual file edit operation."""
 
-    file_path: str = Field(..., description="Path to the file")
-    file_hash: str = Field(..., description="Hash of original contents")
+    path: str = Field(..., description="Path to the file")
+    hash: str = Field(..., description="Hash of original contents")
     patches: List[EditPatch] = Field(..., description="Edit operations to apply")
 
 
@@ -61,15 +61,15 @@ class EditResult(BaseModel):
 
     result: str = Field(..., description="Operation result (ok/error)")
     reason: Optional[str] = Field(None, description="Error message if applicable")
-    file_hash: Optional[str] = Field(
+    hash: Optional[str] = Field(
         None, description="Current content hash (None for missing files)"
     )
 
     @model_validator(mode="after")
     def validate_error_result(self) -> "EditResult":
-        """Remove file_hash when result is error."""
+        """Remove hash when result is error."""
         if self.result == "error":
-            object.__setattr__(self, "file_hash", None)
+            object.__setattr__(self, "hash", None)
         return self
 
     def to_dict(self) -> Dict:
@@ -77,8 +77,8 @@ class EditResult(BaseModel):
         result = {"result": self.result}
         if self.reason is not None:
             result["reason"] = self.reason
-        if self.file_hash is not None:
-            result["file_hash"] = self.file_hash
+        if self.hash is not None:
+            result["hash"] = self.hash
         return result
 
 
@@ -89,12 +89,12 @@ class EditTextFileContentsRequest(BaseModel):
     {
         "files": [
             {
-                "file_path": "/path/to/file",
-                "file_hash": "abc123...",
+                "path": "/path/to/file",
+                "hash": "abc123...",
                 "patches": [
                     {
-                        "line_start": 1,  # default: 1 (top of file)
-                        "line_end": null,  # default: null (end of file)
+                        "start": 1,  # default: 1 (top of file)
+                        "end": null,  # default: null (end of file)
                         "contents": "new content"
                     }
                 ]
@@ -109,8 +109,8 @@ class EditTextFileContentsRequest(BaseModel):
 class FileRange(BaseModel):
     """Represents a line range in a file."""
 
-    line_start: int = Field(..., description="Starting line number (1-based)")
-    line_end: Optional[int] = Field(
+    start: int = Field(..., description="Starting line number (1-based)")
+    end: Optional[int] = Field(
         None, description="Ending line number (null for end of file)"
     )
     range_hash: Optional[str] = Field(
@@ -132,21 +132,21 @@ class InsertTextFileContentsRequest(BaseModel):
 
     Example:
     {
-        "file_path": "/path/to/file",
+        "path": "/path/to/file",
         "file_hash": "abc123...",
         "after": 5,  # Insert after line 5
         "contents": "new content"
     }
     or
     {
-        "file_path": "/path/to/file",
+        "path": "/path/to/file",
         "file_hash": "abc123...",
         "before": 5,  # Insert before line 5
         "contents": "new content"
     }
     """
 
-    file_path: str = Field(..., description="Path to the text file")
+    path: str = Field(..., description="Path to the text file")
     file_hash: str = Field(..., description="Hash of original contents")
     after: Optional[int] = Field(
         None, description="Line number after which to insert content"
@@ -184,8 +184,8 @@ class DeleteTextFileContentsRequest(BaseModel):
         "file_hash": "abc123...",
         "ranges": [
             {
-                "line_start": 5,
-                "line_end": 10,
+                "start": 5,
+                "end": 10,
                 "range_hash": "def456..."
             }
         ]
@@ -208,8 +208,8 @@ class PatchTextFileContentsRequest(BaseModel):
         "file_hash": "abc123...",
         "patches": [
             {
-                "line_start": 5,
-                "line_end": 10,
+                "start": 5,
+                "end": 10,
                 "contents": "new content",
                 "range_hash": "def456..."
             }

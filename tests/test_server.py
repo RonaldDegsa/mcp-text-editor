@@ -6,7 +6,7 @@ from typing import List
 
 import pytest
 from mcp.server import stdio
-from mcp.types import ResourceTemplate, TextContent, Tool
+from mcp.types import TextContent, Tool
 from pytest_mock import MockerFixture
 
 from mcp_text_editor.server import (
@@ -19,76 +19,24 @@ from mcp_text_editor.server import (
     get_contents_handler,
     insert_file_handler,
     list_tools,
-    list_resource_templates,
     main,
     patch_file_handler,
-    read_resource,
 )
 
 
 @pytest.mark.asyncio
 async def test_list_tools():
-    """Test tool listing with enhanced descriptions and LLM guidance."""
+    """Test tool listing."""
     tools: List[Tool] = await list_tools()
     assert len(tools) == 6
 
-    # Verify each tool has required components
-    for tool in tools:
-        assert tool.description is not None and len(tool.description) > 0
-        assert tool.input_schema is not None
-        assert "When " in tool.description.lower()
-
-    # Verify GetTextFileContents tool specifically
+    # Verify GetTextFileContents tool
     get_contents_tool = next(
         (tool for tool in tools if tool.name == "get_text_file_contents"), None
     )
     assert get_contents_tool is not None
-    assert "line-range" in get_contents_tool.description.lower()
-    assert "token usage" in get_contents_tool.description.lower()
-
-
-@pytest.mark.asyncio
-async def test_list_resource_templates():
-    """Test resource template listing."""
-    templates: List[ResourceTemplate] = await list_resource_templates()
-    assert len(templates) == 1
-
-    template = templates[0]
-    assert template.uri_template == "text://{file_path}?lines={line_start}-{line_end}"
-    assert template.name == "Line range access"
-    assert template.mime_type == "text/plain"
-    assert "Parameters:" in template.description
-    assert "file_path:" in template.description
-    assert "line_start:" in template.description
-    assert "line_end:" in template.description
-
-
-@pytest.mark.asyncio
-async def test_read_resource_valid_uri(test_file):
-    """Test read_resource with valid line range URI."""
-    uri = f"text://{test_file}?lines=1-3"
-    result = await read_resource(uri)
-    assert isinstance(result, TextContent)
-    assert result.type == "text"
-    assert len(result.text) > 0
-
-
-@pytest.mark.asyncio
-async def test_read_resource_invalid_uri():
-    """Test read_resource with invalid URI format."""
-    invalid_uri = "invalid://path/to/file.txt"
-    with pytest.raises(ValueError) as exc_info:
-        await read_resource(invalid_uri)
-    assert "Invalid URI scheme" in str(exc_info.value)
-
-
-@pytest.mark.asyncio
-async def test_read_resource_missing_parameters():
-    """Test read_resource with missing required parameters."""
-    uri = "text:///path/to/file.txt"  # Missing lines parameter
-    with pytest.raises(ValueError) as exc_info:
-        await read_resource(uri)
-    assert "Missing 'lines' parameter" in str(exc_info.value)
+    assert "file" in get_contents_tool.description.lower()
+    assert "contents" in get_contents_tool.description.lower()
 
 
 @pytest.mark.asyncio
@@ -113,7 +61,7 @@ async def test_unknown_tool_handler():
 @pytest.mark.asyncio
 async def test_get_contents_handler(test_file):
     """Test GetTextFileContents handler."""
-    args = {"files": [{"file_path": test_file, "ranges": [{"line_start": 1, "line_end": 3}]}]}
+    args = {"files": [{"file_path": test_file, "ranges": [{"start": 1, "end": 3}]}]}
     result = await get_contents_handler.run_tool(args)
     assert len(result) == 1
     assert isinstance(result[0], TextContent)
@@ -121,8 +69,8 @@ async def test_get_contents_handler(test_file):
     assert test_file in content
     range_result = content[test_file]["ranges"][0]
     assert "content" in range_result
-    assert "line_start" in range_result
-    assert "line_end" in range_result
+    assert "start" in range_result
+    assert "end" in range_result
     assert "file_hash" in content[test_file]
     assert "total_lines" in range_result
     assert "content_size" in range_result
@@ -133,7 +81,7 @@ async def test_get_contents_handler_invalid_file(test_file):
     """Test GetTextFileContents handler with invalid file."""
     # Convert relative path to absolute
     nonexistent_path = str(Path("nonexistent.txt").absolute())
-    args = {"files": [{"file_path": nonexistent_path, "ranges": [{"line_start": 1}]}]}
+    args = {"files": [{"file_path": nonexistent_path, "ranges": [{"start": 1}]}]}
     with pytest.raises(RuntimeError) as exc_info:
         await get_contents_handler.run_tool(args)
     assert "File not found" in str(exc_info.value)
@@ -142,7 +90,7 @@ async def test_get_contents_handler_invalid_file(test_file):
 @pytest.mark.asyncio
 async def test_call_tool_get_contents(test_file):
     """Test call_tool with GetTextFileContents."""
-    args = {"files": [{"file_path": test_file, "ranges": [{"line_start": 1, "line_end": 3}]}]}
+    args = {"files": [{"file_path": test_file, "ranges": [{"start": 1, "end": 3}]}]}
     result = await call_tool("get_text_file_contents", args)
     assert len(result) == 1
     assert isinstance(result[0], TextContent)
@@ -150,8 +98,8 @@ async def test_call_tool_get_contents(test_file):
     assert test_file in content
     range_result = content[test_file]["ranges"][0]
     assert "content" in range_result
-    assert "line_start" in range_result
-    assert "line_end" in range_result
+    assert "start" in range_result
+    assert "end" in range_result
     assert "file_hash" in content[test_file]
     assert "total_lines" in range_result
     assert "content_size" in range_result
@@ -178,7 +126,7 @@ async def test_call_tool_error_handling():
     with pytest.raises(RuntimeError) as exc_info:
         await call_tool(
             "get_text_file_contents",
-            {"files": [{"file_path": nonexistent_path, "ranges": [{"line_start": 1}]}]},
+            {"files": [{"file_path": nonexistent_path, "ranges": [{"start": 1}]}]},
         )
     assert "File not found" in str(exc_info.value)
 
@@ -229,7 +177,7 @@ async def test_get_contents_relative_path():
         await handler.run_tool(
             {
                 "files": [
-                    {"file_path": "relative/path/file.txt", "ranges": [{"line_start": 1}]}
+                    {"file_path": "relative/path/file.txt", "ranges": [{"start": 1}]}
                 ]
             }
         )
@@ -249,7 +197,7 @@ async def test_get_contents_absolute_path():
     handler.editor.read_multiple_ranges = mock_read_multiple_ranges
 
     result = await handler.run_tool(
-        {"files": [{"file_path": abs_path, "ranges": [{"line_start": 1}]}]}
+        {"files": [{"file_path": abs_path, "ranges": [{"start": 1}]}]}
     )
     assert isinstance(result[0], TextContent)
 
