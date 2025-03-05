@@ -6,7 +6,7 @@ from collections.abc import Sequence
 from typing import Any, List
 
 from mcp.server import Server
-from mcp.types import Resource, ResourceTemplate, TextContent, Tool, Prompt, PromptArgument
+from mcp.types import Resource, ResourceTemplate, TextContent, Tool, Prompt, PromptArgument, GetPromptResult, PromptMessage
 
 from .handlers import (
     AppendTextFileContentsHandler,
@@ -62,50 +62,184 @@ async def list_resources() -> List[Resource]:
     ]
 
 
+# Define available prompts
+PROMPTS = {
+    "simple-edit": Prompt(
+        name="simple-edit",
+        description="Simple file editing without arguments",
+    ),
+    
+    "code-implement": Prompt(
+        name="code-implement",
+        description="Implement or enhance code based on requirements",
+        arguments=[
+            PromptArgument(
+                name="task",
+                description="Implementation task description",
+                required=True
+            ),
+            PromptArgument(
+                name="file_path",
+                description="Target file path (existing or new)",
+                required=False
+            ),
+            PromptArgument(
+                name="language",
+                description="Programming language",
+                required=False
+            )
+        ]
+    ),
+    
+    "fix-bug": Prompt(
+        name="fix-bug",
+        description="Help diagnose and fix bugs in code",
+        arguments=[
+            PromptArgument(
+                name="issue",
+                description="Description of the bug or issue",
+                required=True
+            ),
+            PromptArgument(
+                name="file_path",
+                description="Path to the file containing the bug",
+                required=True
+            ),
+            PromptArgument(
+                name="error_message",
+                description="Error message or stack trace, if available",
+                required=False
+            )
+        ]
+    )
+}
+
 @app.list_prompts()
 async def list_prompts() -> List[Prompt]:
     """List available prompts."""
-    logger.info("Listing available prompts")
-    return [
-        Prompt(
-            name="edit-file",
-            description="Create or edit a text file",
-            arguments=[
-                PromptArgument(
-                    name="file_path",
-                    description="Path to the file to edit",
-                    required=True
-                ),
-                PromptArgument(
-                    name="task",
-                    description="What you want to do with the file",
-                    required=True
-                )
-            ]
-        ),
-        Prompt(
-            name="code-review",
-            description="Review code in a file",
-            arguments=[
-                PromptArgument(
-                    name="file_path",
-                    description="Path to the code file to review",
-                    required=True
-                )
-            ]
-        ),
-        Prompt(
-            name="summarize",
-            description="Summarize the contents of a text file",
-            arguments=[
-                PromptArgument(
-                    name="file_path",
-                    description="Path to the file to summarize",
-                    required=True
+    return list(PROMPTS.values())
+
+@app.get_prompt()
+async def get_prompt(name: str, arguments: dict | None = None) -> GetPromptResult:
+    """Handle prompt requests."""
+    if name not in PROMPTS:
+        raise ValueError(f"Prompt not found: {name}")
+    
+    if arguments is None:
+        arguments = {}
+    
+    if name == "simple-edit":
+        return GetPromptResult(
+            messages=[
+                PromptMessage(
+                    role="user",
+                    content=TextContent(
+                        type="text",
+                        text="""I need help editing a text file using the MCP text editor tools.
+
+To use these tools effectively, follow these steps:
+
+1. First, use the "get_text_file_contents" tool to read the file content and obtain the file hash.
+2. If you want to make changes, use the appropriate tool:
+   - For creating new files: "create_text_file"
+   - For replacing content: "patch_text_file_contents" (requires file hash)
+   - For inserting at a position: "insert_text_file_contents"
+   - For adding to the end: "append_text_file_contents"
+   - For removing content: "delete_text_file_contents"
+
+Please help me edit a file of my choice."""
+                    )
                 )
             ]
         )
-    ]
+    
+    elif name == "code-implement":
+        task = arguments.get("task", "[TASK]")
+        file_path = arguments.get("file_path", "")
+        language = arguments.get("language", "")
+        
+        file_path_text = f" in the file at {file_path}" if file_path else ""
+        language_text = f" using {language}" if language else ""
+        
+        return GetPromptResult(
+            messages=[
+                PromptMessage(
+                    role="user",
+                    content=TextContent(
+                        type="text",
+                        text=f"""I need to implement the following{language_text}{file_path_text}:
+
+{task}
+
+Please help me with this implementation. Follow these steps:
+
+1. First, read the existing code if needed using the "get_text_file_contents" tool
+2. Understand the requirements and plan the implementation
+3. If creating a new file:
+   - Use "create_text_file" with the complete implementation
+4. If modifying an existing file:
+   - Use "get_text_file_contents" to get the current content and file hash
+   - Use one of these tools to make changes:
+     - "patch_text_file_contents" to replace sections (requires file hash and range hash)
+     - "insert_text_file_contents" to add content at specific positions
+     - "append_text_file_contents" to add content at the end
+5. Verify the changes meet the requirements
+
+Remember that all file paths must be absolute, and when patching files, you need the file hash and range hash for concurrency control."""
+                    )
+                ),
+                PromptMessage(
+                    role="assistant", 
+                    content=TextContent(
+                        type="text",
+                        text="I'll help you implement this code. Let me break this down into steps."
+                    )
+                )
+            ]
+        )
+    
+    elif name == "fix-bug":
+        issue = arguments.get("issue", "[ISSUE]")
+        file_path = arguments.get("file_path", "[FILE_PATH]")
+        error_message = arguments.get("error_message", "")
+        
+        error_text = f"\nThe error message is:\n```\n{error_message}\n```" if error_message else ""
+        
+        return GetPromptResult(
+            messages=[
+                PromptMessage(
+                    role="user",
+                    content=TextContent(
+                        type="text",
+                        text=f"""I need help fixing a bug in the file at {file_path}.
+
+The issue is: {issue}{error_text}
+
+Please help me diagnose and fix this issue. Follow these steps:
+
+1. First, read the code using "get_text_file_contents" to understand the context
+2. Analyze the code and identify the potential cause of the bug
+3. Come up with a fix
+4. Apply the fix using:
+   - "patch_text_file_contents" to replace buggy sections
+   - "insert_text_file_contents" to add missing code
+   - "delete_text_file_contents" to remove problematic code
+5. Explain the root cause and how the fix addresses it
+
+Remember that file paths must be absolute, and when using patch_text_file_contents, you need the file hash and range hash for each section you're modifying."""
+                    )
+                ),
+                PromptMessage(
+                    role="assistant", 
+                    content=TextContent(
+                        type="text",
+                        text="I'll help you fix this bug. Let me start by examining the code to understand what's happening."
+                    )
+                )
+            ]
+        )
+    
+    raise ValueError("Prompt implementation not found")
 
 
 @app.list_tools()
@@ -153,57 +287,17 @@ async def list_resource_templates() -> List[ResourceTemplate]:
     """List available resource templates."""
     return [
         ResourceTemplate(
-            uri_template="text://{file_path}?lines={line_start}-{line_end}",
+            uri_template="text://{path}?lines={start}-{end}",
             name="Line range access",
             mime_type="text/plain",
             description="""Access specific line ranges in text files.
 Parameters:
-- file_path: Path to the text file
-- line_start: Starting line number (1-based)
-- line_end: Ending line number (optional, defaults to end of file)
+- path: Path to the text file
+- start: Starting line number (1-based)
+- end: Ending line number (optional, defaults to end of file)
 Example: text://path/to/file.txt?lines=5-10""",
         )
     ]
-
-
-@app.get_prompt()
-async def get_prompt(name: str, arguments: dict) -> dict:
-    """Handle prompt requests."""
-    logger.info(f"Getting prompt: {name} with arguments {arguments}")
-    
-    if name == "edit-file":
-        file_path = arguments.get("file_path", "[FILE_PATH]")
-        task = arguments.get("task", "[TASK]")
-        return {
-            "messages": [
-                {
-                    "role": "user",
-                    "content": f"I need to {task} in the file at {file_path}. Please help me with that."
-                }
-            ]
-        }
-    elif name == "code-review":
-        file_path = arguments.get("file_path", "[FILE_PATH]")
-        return {
-            "messages": [
-                {
-                    "role": "user",
-                    "content": f"Please review the code in {file_path}. Suggest any improvements or identify potential issues."
-                }
-            ]
-        }
-    elif name == "summarize":
-        file_path = arguments.get("file_path", "[FILE_PATH]")
-        return {
-            "messages": [
-                {
-                    "role": "user", 
-                    "content": f"Please summarize the contents of the file at {file_path} in a concise way."
-                }
-            ]
-        }
-    else:
-        raise ValueError(f"Unknown prompt: {name}")
 
 
 async def main() -> None:
