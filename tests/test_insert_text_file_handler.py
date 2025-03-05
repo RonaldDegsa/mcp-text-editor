@@ -59,7 +59,7 @@ async def test_neither_before_nor_after(handler):
         RuntimeError, match="Exactly one of 'before' or 'after' must be specified"
     ):
         await handler.run_tool(
-            {"file_path": "/tmp/test.txt", "file_hash": "hash", "contents": "content"}
+            {"file_path": "C:/tmp/test.txt", "file_hash": "hash", "contents": "content"}
         )
 
 
@@ -71,7 +71,7 @@ async def test_both_before_and_after(handler):
     ):
         await handler.run_tool(
             {
-                "file_path": "/tmp/test.txt",
+                "file_path": "C:/tmp/test.txt",
                 "file_hash": "hash",
                 "contents": "content",
                 "before": 1,

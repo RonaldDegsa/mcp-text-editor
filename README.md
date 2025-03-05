@@ -54,34 +54,6 @@ MCP Text Editor Server is designed to facilitate safe and efficient line-based t
 
 ## Requirements
 
-- Python 3.11 or higher
-- POSIX-compliant operating system (Linux, macOS, etc.) or Windows
-- Sufficient disk space for text file operations
-- File system permissions for read/write operations
-
-1. Install Python 3.11+
-
-```bash
-pyenv install 3.11.6
-pyenv local 3.11.6
-```
-
-2. Install uv (recommended) or pip
-
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
-
-3. Create virtual environment and install dependencies
-
-```bash
-uv venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-uv pip install -e ".[dev]"
-```
-
-## Requirements
-
 - Python 3.13+
 - POSIX-compliant operating system (Linux, macOS, etc.) or Windows
 - File system permissions for read/write operations
@@ -293,16 +265,6 @@ Important Notes:
 }
 ```
 
-    "result": "error",
-    "reason": "Content hash mismatch - file was modified",
-    "hash": "current-hash",
-    "content": "Current file content"
-
-}
-}
-
-````
-
 ### Common Usage Pattern
 
 1. Get current content and hash:
@@ -312,11 +274,11 @@ contents = await get_text_file_contents({
     "files": [
         {
             "file_path": "file.txt",
-            "ranges": [{"start": 1, "end": null}]  # Read entire file
+            "ranges": [{"start": 1, "end": None}]  # Read entire file
         }
     ]
 })
-````
+```
 
 2. Edit file content:
 
