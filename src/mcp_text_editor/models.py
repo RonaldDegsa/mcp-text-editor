@@ -153,10 +153,6 @@ class InsertTextFileContentsRequest(BaseModel):
         """Validate that either after or before is specified, but not both."""
         return self
 
-    @field_validator("after", "before")
-    def validate_line_numbers(cls, value):
-        """Validate line numbers."""
-        return value
 
 
 class DeleteTextFileContentsRequest(BaseModel):

@@ -2,8 +2,8 @@
 
 import pytest
 
-from mcp_text_editor.models 
-from mcp_text_editor.text_editor import EditPatch, TextEditor 
+from mcp_text_editor.models import EditPatch
+from mcp_text_editor.text_editor import TextEditor 
 
 
 @pytest.fixture

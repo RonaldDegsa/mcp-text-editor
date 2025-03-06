@@ -3,12 +3,13 @@
 import logging
 from typing import Any, Dict
 
+from .base_operations import BaseTextOperations
 from .models import DeleteTextFileContentsRequest
 
 logger = logging.getLogger(__name__)
 
 
-class TextDeleteOperations:
+class TextDeleteOperations(BaseTextOperations):
     """Handles text deletion operations."""
 
     async def delete_text_file_contents(
