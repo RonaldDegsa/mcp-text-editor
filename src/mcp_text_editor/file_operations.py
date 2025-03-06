@@ -3,7 +3,8 @@
 import datetime
 import logging
 import os
-from typing import Any, Dict, List, Optional, Tuple
+import inspect
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from .base_operations import BaseTextOperations
 from .models import FileRanges
@@ -13,6 +14,51 @@ logger = logging.getLogger(__name__)
 
 class TextFileOperations(BaseTextOperations):
     """Handles basic file operations."""
+    
+    MAX_CONTENT_LENGTH = 1000  # Maximum characters allowed in content returns
+
+    def _truncate_content(
+        self, content: Union[str, Dict, List], filename: str, line_number: int = 0
+    ) -> Union[str, Dict, List]:
+        """Helper method to truncate content and add warning message if it exceeds MAX_CONTENT_LENGTH."""
+        def get_content_length(data: Union[str, Dict, List]) -> int:
+            if isinstance(data, str):
+                return len(data)
+            elif isinstance(data, dict):
+                return sum(len(str(v)) for v in data.values() if isinstance(v, str))
+            elif isinstance(data, list):
+                return sum(len(str(item)) for item in data if isinstance(item, str))
+            return 0
+
+        def get_caller_name() -> str:
+            frame = inspect.currentframe()
+            while frame:
+                if frame.f_code.co_name != '_truncate_content':
+                    return frame.f_code.co_name
+                frame = frame.f_back
+            return "unknown"
+
+        content_length = get_content_length(content)
+        
+        if content_length <= self.MAX_CONTENT_LENGTH:
+            return content
+
+        truncation_message = (
+            f"====== TRUNCATED {filename} ======\n"
+            f"= Content return length exceeded, content length: {content_length}\n"
+            f"= Line number: {line_number}\n"
+            f"= Please use more granular line specific searches! The files are too big for you!\n"
+            f"= Tool: {get_caller_name()}\n"
+            f"====== END TRUNCATED ==========\n"
+        )
+
+        if isinstance(content, str):
+            return truncation_message
+        elif isinstance(content, dict):
+            return {"result": "truncated", "message": truncation_message}
+        elif isinstance(content, list):
+            return [truncation_message]
+        return content
 
     async def _read_file(
         self, file_path: str, encoding: str = "utf-8"
@@ -23,7 +69,10 @@ class TextFileOperations(BaseTextOperations):
             with open(file_path, "r", encoding=encoding) as f:
                 lines = f.readlines()
             file_content = "".join(lines)
-            return lines, file_content, len(lines)
+            filename = os.path.basename(file_path)
+            truncated_lines = self._truncate_content(lines, filename)
+            truncated_content = self._truncate_content(file_content, filename)
+            return truncated_lines, truncated_content, len(lines)
         except FileNotFoundError as err:
             raise FileNotFoundError(f"File not found: {file_path}") from err
         except UnicodeDecodeError as err:
@@ -37,12 +86,13 @@ class TextFileOperations(BaseTextOperations):
 
     async def read_multiple_ranges(
         self, ranges: List[Dict[str, Any]], encoding: str = "utf-8"
-    ) -> Dict[str, Dict[str, Any]]:
+    ) -> Dict[str, Dict[str, Any]] :
         result: Dict[str, Dict[str, Any]] = {}
 
         for file_range_dict in ranges:
             file_range = FileRanges.model_validate(file_range_dict)
             file_path = file_range.file_path
+            filename = os.path.basename(file_path)
             lines, file_content, total_lines = await self._read_file(
                 file_path, encoding=encoding
             )
@@ -75,10 +125,11 @@ class TextFileOperations(BaseTextOperations):
                 selected_lines = lines[start:end]
                 content = "".join(selected_lines)
                 range_hash = self.calculate_hash(content)
+                truncated_content = self._truncate_content(content, filename, start + 1)
 
                 result[file_path]["ranges"].append(
                     {
-                        "content": content,
+                        "content": truncated_content,
                         "start": start + 1,
                         "end": end,
                         "range_hash": range_hash,
@@ -98,7 +149,7 @@ class TextFileOperations(BaseTextOperations):
     ) -> Tuple[str, int, int, str, int, int]:
         """Read file contents within specified line range."""
         # Call the base class implementation
-        lines, file_content, total_lines = await self._read_file(
+        lines, _, total_lines = await self._read_file(
             file_path, encoding=encoding
         )
 
@@ -119,9 +170,11 @@ class TextFileOperations(BaseTextOperations):
         content = "".join(selected_lines)
         content_hash = self.calculate_hash(content)
         content_size = len(content.encode(encoding))
+        
+        truncated_content = self._truncate_content(content, os.path.basename(file_path), start + 1)
 
         return (
-            content,
+            truncated_content,
             start + 1,
             end,
             content_hash,
@@ -172,11 +225,11 @@ class TextFileOperations(BaseTextOperations):
 
             # Verify target file hash
             (
-                current_content,
+                _,
                 _,
                 _,
                 current_hash,
-                total_lines,
+                _,
                 _,
             ) = await self.read_file_contents(
                 target_file_path,
@@ -210,10 +263,12 @@ class TextFileOperations(BaseTextOperations):
             with open(target_file_path, "r", encoding=encoding) as f:
                 updated_content = f.read()
                 new_hash = self.calculate_hash(updated_content)
+                truncated_content = self._truncate_content(updated_content, os.path.basename(target_file_path))
 
             return {
                 "result": "ok",
                 "hash": new_hash,
+                "content": truncated_content,
                 "reason": None,
             }
 
@@ -283,7 +338,7 @@ class TextFileOperations(BaseTextOperations):
 
             # Verify target file hash
             (
-                current_content,
+                _,
                 _,
                 _,
                 current_hash,
@@ -384,12 +439,22 @@ class TextFileOperations(BaseTextOperations):
             with open(target_file_path, "r", encoding=encoding) as f:
                 updated_content = f.read()
                 new_hash = self.calculate_hash(updated_content)
+                truncated_content = self._truncate_content(updated_content, os.path.basename(target_file_path))
+
+            # Truncate any file info content if present
+            for file_info in appended_files:
+                if "content" in file_info:
+                    file_info["content"] = self._truncate_content(
+                        file_info["content"],
+                        os.path.basename(file_info["path"])
+                    )
 
             return {
                 "result": "ok",
                 "hash": new_hash,
                 "target_file": target_file_path,
                 "files_appended": appended_files,
+                "content": truncated_content,
                 "reason": None,
             }
 

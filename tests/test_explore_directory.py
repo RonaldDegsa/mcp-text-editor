@@ -85,11 +85,15 @@ async def test_explore_directory_with_all_options(explore_handler, temp_dir_with
         if item["is_directory"] and item["name"] == "subdir1":
             assert "contents" in item
             nested_items = item["contents"]
-            nested_dirs = [nested["name"] for nested in nested_items if nested["is_directory"]]
+            nested_dirs = [
+                nested["name"] for nested in nested_items if nested["is_directory"]
+            ]
             assert "nested" in nested_dirs
 
 
-async def test_explore_directory_without_subdirectories(explore_handler, temp_dir_with_files):
+async def test_explore_directory_without_subdirectories(
+    explore_handler, temp_dir_with_files
+):
     """Test exploring a directory without including subdirectories."""
     args = {
         "directory_path": str(temp_dir_with_files),

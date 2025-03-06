@@ -154,7 +154,6 @@ class InsertTextFileContentsRequest(BaseModel):
         return self
 
 
-
 class DeleteTextFileContentsRequest(BaseModel):
     """Request model for deleting text from a file.
     Example:

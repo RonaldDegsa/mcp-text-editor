@@ -32,7 +32,7 @@ from .handlers.line_range_resource_handler import LineRangeResourceHandler
 from .version import __version__
 
 # Configure logging
-logging.basicConfig(level=logging.ERROR)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("mcp-text-editor")
 
 app = Server("mcp-text-editor")
@@ -73,6 +73,24 @@ async def list_resources() -> List[Resource]:
             name="Text file access",
             mime_type="text/plain",
             description="Access text files with line-range precision through the text:// URI scheme.",
+        )
+    ]
+
+
+@app.list_resource_templates()
+async def list_resource_templates() -> List[ResourceTemplate]:
+    """List available resource templates."""
+    return [
+        ResourceTemplate(
+            uri_template="text://{path}?lines={start}-{end}",
+            name="Line range access",
+            mime_type="text/plain",
+            description="""Access specific line ranges in text files.
+Parameters:
+- path: Path to the text file
+- start: Starting line number (1-based)
+- end: Ending line number (optional, defaults to end of file)
+Example: text://path/to/file.txt?lines=5-10""",
         )
     ]
 
@@ -310,24 +328,6 @@ async def call_tool(name: str, arguments: Any) -> Sequence[TextContent]:
     except Exception as e:
         logger.error(traceback.format_exc())
         raise RuntimeError(f"Error executing command: {str(e)}") from e
-
-
-@app.list_resource_templates()
-async def list_resource_templates() -> List[ResourceTemplate]:
-    """List available resource templates."""
-    return [
-        ResourceTemplate(
-            uri_template="text://{path}?lines={start}-{end}",
-            name="Line range access",
-            mime_type="text/plain",
-            description="""Access specific line ranges in text files.
-Parameters:
-- path: Path to the text file
-- start: Starting line number (1-based)
-- end: Ending line number (optional, defaults to end of file)
-Example: text://path/to/file.txt?lines=5-10""",
-        )
-    ]
 
 
 async def main() -> None:

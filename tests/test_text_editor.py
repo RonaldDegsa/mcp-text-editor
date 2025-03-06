@@ -1,4 +1,12 @@
-"""Tests for the TextEditor class."""
+"""
+This file is kept for backward compatibility.
+All tests are now auto-discovered in their respective modules:
+  - tests/test_text_editor_base.py
+  - tests/test_text_editor_edit.py
+  - tests/test_text_editor_error_handling.py
+
+To run all tests, simply execute: pytest
+"""
 
 # Import specific test functions from the split files
 # From test_text_editor_base.py

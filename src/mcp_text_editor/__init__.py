@@ -2,6 +2,7 @@
 
 import asyncio
 
+from .base_operations import BaseTextOperations
 from .server import main
 from .text_editor import TextEditor
 

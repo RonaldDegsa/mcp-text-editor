@@ -157,6 +157,14 @@ else {
     exit 1
 }
 
+uv pip install -e ".[dev,test]"
+if ($?) {
+    Write-Host "Installed dev and test dependencies"
+}
+else {
+    Write-Host "Failed to install dev and test dependencies"
+    exit 1
+}
 
 # Build the package using uv
 uv pip install --force-reinstall -e .
@@ -169,6 +177,8 @@ else {
 }
 
 
+
+
 # Sync dependencies using uv
 uv sync --all-extras --link-mode=copy
 if ($?) {
@@ -179,7 +189,7 @@ else {
     exit 1
 }
 
-# Format the code
+# Format the test code
 uvx black src tests
 if ($?) {
     Write-Host "Formatted code"
