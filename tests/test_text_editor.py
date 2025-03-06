@@ -2,7 +2,7 @@
 
 # Import specific test functions from the split files
 # From test_text_editor_base.py
-from .test_text_editor_base import (
+from tests.test_text_editor_base import (
     test_calculate_hash,
     test_empty_content_handling,
     test_encoding_error,
@@ -17,7 +17,7 @@ from .test_text_editor_base import (
 )
 
 # From test_text_editor_edit.py
-from .test_text_editor_edit import (
+from tests.test_text_editor_edit import (
     test_append_mode,
     test_content_without_newline,
     test_create_file_in_new_directory,
@@ -37,7 +37,7 @@ from .test_text_editor_edit import (
 )
 
 # From test_text_editor_error_handling.py
-from .test_text_editor_error_handling import (
+from tests.test_text_editor_error_handling import (
     test_create_file_directory_creation_failure,
     test_create_file_directory_error,
     test_directory_creation_failure,

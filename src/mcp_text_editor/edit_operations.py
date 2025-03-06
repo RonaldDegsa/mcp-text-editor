@@ -3,12 +3,13 @@
 import logging
 from typing import Any, Dict, List, Optional
 
+from .base_operations import BaseTextOperations
 from .models import EditPatch
 
 logger = logging.getLogger(__name__)
 
 
-class TextEditOperations:
+class TextEditOperations(BaseTextOperations):
     """Handles text editing operations."""
 
     async def edit_file_contents(

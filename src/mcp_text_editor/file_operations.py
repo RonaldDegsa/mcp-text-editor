@@ -5,12 +5,13 @@ import logging
 import os
 from typing import Any, Dict, List, Optional, Tuple
 
+from .base_operations import BaseTextOperations
 from .models import FileRanges
 
 logger = logging.getLogger(__name__)
 
 
-class TextFileOperations:
+class TextFileOperations(BaseTextOperations):
     """Handles basic file operations."""
 
     async def _read_file(
@@ -95,6 +96,8 @@ class TextFileOperations:
         end: Optional[int] = None,
         encoding: str = "utf-8",
     ) -> Tuple[str, int, int, str, int, int]:
+        """Read file contents within specified line range."""
+        # Call the base class implementation
         lines, file_content, total_lines = await self._read_file(
             file_path, encoding=encoding
         )
