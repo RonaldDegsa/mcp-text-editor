@@ -1,14 +1,16 @@
 """Handler for line-range resource access."""
 
+import logging
 import urllib.parse
 from typing import Any, Dict, Optional, Sequence, Tuple
+from urllib.parse import urlparse
 
 from mcp.types import TextContent, Tool
 
 from ..service import TextEditorService
 from .base import BaseHandler
 
-
+logger = logging.getLogger("mcp-text-editor")
 class LineRangeResourceHandler(BaseHandler):
     """Handler for accessing text file contents through URI templates."""
 
@@ -91,7 +93,8 @@ class LineRangeResourceHandler(BaseHandler):
             ValueError: If the URI format is invalid.
         """
         try:
-            parsed = urllib.parse.urlparse(uri)
+            logger.info(f"Parsing URI: {uri}")
+            parsed = urlparse(str(uri))
             if parsed.scheme != "text":
                 raise ValueError(f"Invalid URI scheme: {parsed.scheme}")
 

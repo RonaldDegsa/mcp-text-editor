@@ -1,13 +1,14 @@
 """Base handler for MCP Text Editor."""
 
 import abc
+import logging
 from typing import Any, Dict, Sequence
 
 from mcp.types import TextContent, Tool
 
 from ..text_editor import TextEditor
 
-
+logger = logging.getLogger("mcp-text-editor")
 class BaseHandler(abc.ABC):
     """Base class for handlers.
 
@@ -30,6 +31,7 @@ class BaseHandler(abc.ABC):
             editor: The text editor instance to use. If None, a new instance will be created.
         """
         self.editor = editor if editor is not None else TextEditor()
+        logger.info(f"Initialized handler {self.name}")
 
     @abc.abstractmethod
     def get_tool_description(self) -> Tool:

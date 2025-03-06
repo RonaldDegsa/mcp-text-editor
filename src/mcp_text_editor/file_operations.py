@@ -1,9 +1,9 @@
 """File read/write operations for TextEditor."""
 
 import datetime
+import inspect
 import logging
 import os
-import inspect
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from .base_operations import BaseTextOperations
@@ -14,13 +14,14 @@ logger = logging.getLogger(__name__)
 
 class TextFileOperations(BaseTextOperations):
     """Handles basic file operations."""
-    
+
     MAX_CONTENT_LENGTH = 1000  # Maximum characters allowed in content returns
 
     def _truncate_content(
         self, content: Union[str, Dict, List], filename: str, line_number: int = 0
     ) -> Union[str, Dict, List]:
         """Helper method to truncate content and add warning message if it exceeds MAX_CONTENT_LENGTH."""
+
         def get_content_length(data: Union[str, Dict, List]) -> int:
             if isinstance(data, str):
                 return len(data)
@@ -33,13 +34,13 @@ class TextFileOperations(BaseTextOperations):
         def get_caller_name() -> str:
             frame = inspect.currentframe()
             while frame:
-                if frame.f_code.co_name != '_truncate_content':
+                if frame.f_code.co_name != "_truncate_content":
                     return frame.f_code.co_name
                 frame = frame.f_back
             return "unknown"
 
         content_length = get_content_length(content)
-        
+
         if content_length <= self.MAX_CONTENT_LENGTH:
             return content
 
@@ -86,7 +87,7 @@ class TextFileOperations(BaseTextOperations):
 
     async def read_multiple_ranges(
         self, ranges: List[Dict[str, Any]], encoding: str = "utf-8"
-    ) -> Dict[str, Dict[str, Any]] :
+    ) -> Dict[str, Dict[str, Any]]:
         result: Dict[str, Dict[str, Any]] = {}
 
         for file_range_dict in ranges:
@@ -149,9 +150,7 @@ class TextFileOperations(BaseTextOperations):
     ) -> Tuple[str, int, int, str, int, int]:
         """Read file contents within specified line range."""
         # Call the base class implementation
-        lines, _, total_lines = await self._read_file(
-            file_path, encoding=encoding
-        )
+        lines, _, total_lines = await self._read_file(file_path, encoding=encoding)
 
         if end is not None and end < start:
             raise ValueError("End line must be greater than or equal to start line")
@@ -170,8 +169,10 @@ class TextFileOperations(BaseTextOperations):
         content = "".join(selected_lines)
         content_hash = self.calculate_hash(content)
         content_size = len(content.encode(encoding))
-        
-        truncated_content = self._truncate_content(content, os.path.basename(file_path), start + 1)
+
+        truncated_content = self._truncate_content(
+            content, os.path.basename(file_path), start + 1
+        )
 
         return (
             truncated_content,
@@ -263,7 +264,9 @@ class TextFileOperations(BaseTextOperations):
             with open(target_file_path, "r", encoding=encoding) as f:
                 updated_content = f.read()
                 new_hash = self.calculate_hash(updated_content)
-                truncated_content = self._truncate_content(updated_content, os.path.basename(target_file_path))
+                truncated_content = self._truncate_content(
+                    updated_content, os.path.basename(target_file_path)
+                )
 
             return {
                 "result": "ok",
@@ -439,14 +442,15 @@ class TextFileOperations(BaseTextOperations):
             with open(target_file_path, "r", encoding=encoding) as f:
                 updated_content = f.read()
                 new_hash = self.calculate_hash(updated_content)
-                truncated_content = self._truncate_content(updated_content, os.path.basename(target_file_path))
+                truncated_content = self._truncate_content(
+                    updated_content, os.path.basename(target_file_path)
+                )
 
             # Truncate any file info content if present
             for file_info in appended_files:
                 if "content" in file_info:
                     file_info["content"] = self._truncate_content(
-                        file_info["content"],
-                        os.path.basename(file_info["path"])
+                        file_info["content"], os.path.basename(file_info["path"])
                     )
 
             return {

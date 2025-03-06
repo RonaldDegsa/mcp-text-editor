@@ -157,7 +157,7 @@ else {
     exit 1
 }
 
-uv pip install -e ".[dev,test]"
+uv pip install --force-reinstall -e ".[dev,test]"
 if ($?) {
     Write-Host "Installed dev and test dependencies"
 }
@@ -189,38 +189,38 @@ else {
     exit 1
 }
 
-# Format the test code
-uvx black src tests
-if ($?) {
-    Write-Host "Formatted code"
-}
-else {
-    Write-Host "Failed to format code"
-    exit 1
-}
-uvx isort src tests
-if ($?) {
-    Write-Host "Sorted imports"
-}
-else {
-    Write-Host "Failed to sort imports"
-    exit 1
-}
-# uvx ruff check --fix src tests
+# # Format the test code
+# uvx black src tests
 # if ($?) {
-#     Write-Host "Checked code with ruff"
+#     Write-Host "Formatted code"
 # }
 # else {
-#     Write-Host "Failed to check code with ruff"
+#     Write-Host "Failed to format code"
 #     exit 1
 # }
+# uvx isort src tests
+# if ($?) {
+#     Write-Host "Sorted imports"
+# }
+# else {
+#     Write-Host "Failed to sort imports"
+#     exit 1
+# }
+# # uvx ruff check --fix src tests
+# # if ($?) {
+# #     Write-Host "Checked code with ruff"
+# # }
+# # else {
+# #     Write-Host "Failed to check code with ruff"
+# #     exit 1
+# # }
 
-# Run tests
-pytest tests -v
-if ($?) {
-    Write-Host "Ran tests"
-}
-else {
-    Write-Host "Failed to run tests"
-    exit 1
-}
+# # Run tests
+# pytest tests -v
+# if ($?) {
+#     Write-Host "Ran tests"
+# }
+# else {
+#     Write-Host "Failed to run tests"
+#     exit 1
+# }

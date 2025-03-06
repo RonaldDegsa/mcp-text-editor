@@ -11,8 +11,6 @@ from mcp.types import (
     Prompt,
     PromptArgument,
     PromptMessage,
-    Resource,
-    ResourceTemplate,
     TextContent,
     Tool,
 )
@@ -28,7 +26,7 @@ from .handlers import (
     PatchTextFileContentsHandler,
     PeekTextFileContentsHandler,
 )
-from .handlers.line_range_resource_handler import LineRangeResourceHandler
+#from .handlers.line_range_resource_handler import LineRangeResourceHandler
 from .version import __version__
 
 # Configure logging
@@ -44,55 +42,54 @@ append_file_handler = AppendTextFileContentsHandler()
 append_file_from_path_handler = AppendTextFileFromPathHandler()
 delete_contents_handler = DeleteTextFileContentsHandler()
 insert_file_handler = InsertTextFileContentsHandler()
-line_range_handler = LineRangeResourceHandler()
 explore_directory_handler = ExploreDirectoryContentsHandler()
 peek_file_handler = PeekTextFileContentsHandler()
 
 
-@app.read_resource()
-async def read_resource(uri: str) -> TextContent:
-    """Handle resource read requests."""
-    logger.info(f"Reading resource: {uri}")
-    try:
-        return await line_range_handler.handle_resource(uri)
-    except ValueError as e:
-        logger.error(f"Invalid resource URI: {str(e)}")
-        raise
-    except Exception as e:
-        logger.error(traceback.format_exc())
-        raise RuntimeError(f"Error reading resource: {str(e)}") from e
+# @app.read_resource()
+# async def read_resource(uri: str) -> TextContent:
+#     """Handle resource read requests."""
+#     logger.info(f"Reading resource: {uri}")
+#     try:
+#         return await line_range_handler.handle_resource(uri)
+#     except ValueError as e:
+#         logger.error(f"Invalid resource URI: {str(e)}")
+#         raise
+#     except Exception as e:
+#         logger.error(traceback.format_exc())
+#         raise RuntimeError(f"Error reading resource: {str(e)}") from e
 
 
-@app.list_resources()
-async def list_resources() -> List[Resource]:
-    """List available resources that can be accessed by clients."""
-    logger.info("Listing available resources")
-    return [
-        Resource(
-            uri="text://example.txt",
-            name="Text file access",
-            mime_type="text/plain",
-            description="Access text files with line-range precision through the text:// URI scheme.",
-        )
-    ]
+# @app.list_resources()
+# async def list_resources() -> List[Resource]:
+#     """List available resources that can be accessed by clients."""
+#     logger.info("Listing available resources")
+#     return [
+#         Resource(
+#             uri="text://example.txt",
+#             name="Text file access",
+#             mime_type="text/plain",
+#             description="Access text files with line-range precision through the text:// URI scheme.",
+#         )
+#     ]
 
 
-@app.list_resource_templates()
-async def list_resource_templates() -> List[ResourceTemplate]:
-    """List available resource templates."""
-    return [
-        ResourceTemplate(
-            uri_template="text://{path}?lines={start}-{end}",
-            name="Line range access",
-            mime_type="text/plain",
-            description="""Access specific line ranges in text files.
-Parameters:
-- path: Path to the text file
-- start: Starting line number (1-based)
-- end: Ending line number (optional, defaults to end of file)
-Example: text://path/to/file.txt?lines=5-10""",
-        )
-    ]
+# @app.list_resource_templates()
+# async def list_resource_templates() -> List[ResourceTemplate]:
+#     """List available resource templates."""
+#     return [
+#         ResourceTemplate(
+#             uri_template="text://{path}?lines={start}-{end}",
+#             name="Line range access",
+#             mime_type="text/plain",
+#             description="""Access specific line ranges in text files.
+# Parameters:
+# - path: Path to the text file
+# - start: Starting line number (1-based)
+# - end: Ending line number (optional, defaults to end of file)
+# Example: text://path/to/file.txt?lines=5-10""",
+#         )
+#     ]
 
 
 # Define available prompts
